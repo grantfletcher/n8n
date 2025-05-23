@@ -4,8 +4,8 @@ import {
 	AI_CATEGORY_TOOLS,
 	AI_SUBCATEGORY,
 	CUSTOM_API_CALL_KEY,
-	EVALUATION_TRIGGER,
 	HTTP_REQUEST_NODE_TYPE,
+	WORKFLOW_EVALUATION_EXPERIMENT,
 } from '@/constants';
 import { memoize, startCase } from 'lodash-es';
 import type {
@@ -21,6 +21,7 @@ import { i18n } from '@/plugins/i18n';
 import { getCredentialOnlyNodeType } from '@/utils/credentialOnlyNodes';
 import { formatTriggerActionName } from '../utils';
 import { usePostHog } from '@/stores/posthog.store';
+import { useUsageStore } from '@/stores/usage.store';
 
 const PLACEHOLDER_RECOMMENDED_ACTION_KEY = 'placeholder_recommended';
 
@@ -333,14 +334,14 @@ export function useActionsGenerator() {
 		httpOnlyCredentials: ICredentialType[],
 	) {
 		const posthogStore = usePostHog();
+		const usageStore = useUsageStore();
 
-		const isEvaluationVariantEnabled = posthogStore.isVariantEnabled(
-			EVALUATION_TRIGGER.name,
-			EVALUATION_TRIGGER.variant,
-		);
+		const isEvaluationEnabled =
+			posthogStore.isFeatureEnabled(WORKFLOW_EVALUATION_EXPERIMENT) &&
+			usageStore.workflowsWithEvaluationsLimit !== 0;
 
 		const visibleNodeTypes = nodeTypes.filter((node) => {
-			if (isEvaluationVariantEnabled) {
+			if (isEvaluationEnabled) {
 				return true;
 			}
 			return (

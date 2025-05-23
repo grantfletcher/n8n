@@ -57,7 +57,7 @@ import {
 	AI_CODE_TOOL_LANGCHAIN_NODE_TYPE,
 	AI_WORKFLOW_TOOL_LANGCHAIN_NODE_TYPE,
 	HUMAN_IN_THE_LOOP_CATEGORY,
-	EVALUATION_TRIGGER,
+	WORKFLOW_EVALUATION_EXPERIMENT,
 } from '@/constants';
 import { useI18n } from '@/composables/useI18n';
 import { useNodeTypesStore } from '@/stores/nodeTypes.store';
@@ -70,6 +70,7 @@ import type { BaseTextKey } from '@/plugins/i18n';
 import { camelCase } from 'lodash-es';
 import { useSettingsStore } from '@/stores/settings.store';
 import { usePostHog } from '@/stores/posthog.store';
+import { useUsageStore } from '@/stores/usage.store';
 
 export interface NodeViewItemSection {
 	key: string;
@@ -170,13 +171,13 @@ export function AIView(_nodes: SimplifiedNodeType[]): NodeView {
 	const nodeTypesStore = useNodeTypesStore();
 	const templatesStore = useTemplatesStore();
 	const posthogStore = usePostHog();
+	const usageStore = useUsageStore();
 
-	const isEvaluationVariantEnabled = posthogStore.isVariantEnabled(
-		EVALUATION_TRIGGER.name,
-		EVALUATION_TRIGGER.variant,
-	);
+	const isEvaluationEnabled =
+		posthogStore.isFeatureEnabled(WORKFLOW_EVALUATION_EXPERIMENT) &&
+		usageStore.workflowsWithEvaluationsLimit !== 0;
 
-	const evaluationNode = getEvaluationNode(nodeTypesStore, isEvaluationVariantEnabled);
+	const evaluationNode = getEvaluationNode(nodeTypesStore, isEvaluationEnabled);
 
 	const chainNodes = getAiNodesBySubcategory(nodeTypesStore.allLatestNodeTypes, AI_CATEGORY_CHAINS);
 	const agentNodes = getAiNodesBySubcategory(nodeTypesStore.allLatestNodeTypes, AI_CATEGORY_AGENTS);
@@ -369,12 +370,12 @@ export function AINodesView(_nodes: SimplifiedNodeType[]): NodeView {
 export function TriggerView() {
 	const i18n = useI18n();
 	const posthogStore = usePostHog();
-	const isEvaluationVariantEnabled = posthogStore.isVariantEnabled(
-		EVALUATION_TRIGGER.name,
-		EVALUATION_TRIGGER.variant,
-	);
+	const usageStore = useUsageStore();
+	const isEvaluationEnabled =
+		posthogStore.isFeatureEnabled(WORKFLOW_EVALUATION_EXPERIMENT) &&
+		usageStore.workflowsWithEvaluationsLimit !== 0;
 
-	const evaluationTriggerNode = isEvaluationVariantEnabled
+	const evaluationTriggerNode = isEvaluationEnabled
 		? {
 				key: EVALUATION_TRIGGER_NODE_TYPE,
 				type: 'node',
